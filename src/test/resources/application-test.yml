@@ -1,0 +1,12 @@
+spring:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: never
+  kafka:
+    consumer:
+      auto-offset-reset: earliest

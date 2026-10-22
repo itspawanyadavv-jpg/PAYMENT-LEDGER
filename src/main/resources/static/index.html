@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Ledger | Double-Entry Financial Engine</title>
+    <meta name="description" content="Production-grade double-entry payment ledger engine featuring strict idempotency, transactional outbox, deadlock-free row locking, and live reconciliation.">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="3"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                        <circle cx="7" cy="15" r="1.5"></circle>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>PAYMENT<span>LEDGER</span></h1>
+                    <span class="brand-tag">DOUBLE-ENTRY FINANCIAL ENGINE</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <div id="systemHealthBadge" class="health-pill loading">
+                    <span class="pulse-dot"></span>
+                    <span id="healthStatusText">Checking Invariants...</span>
+                </div>
+                <a href="/swagger-ui.html" target="_blank" class="nav-link-btn" id="swaggerDocsBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    OpenAPI Docs
+                </a>
+                <a href="/actuator/health" target="_blank" class="nav-link-btn" id="actuatorHealthBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Actuator
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-content">
+        <!-- KPI Metrics Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card glass-panel" id="kpiAccountsCard">
+                <div class="kpi-header">
+                    <span class="kpi-title">Customer Accounts</span>
+                    <div class="kpi-icon blue">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-value" id="kpiAccountCount">0</div>
+                <div class="kpi-meta" id="kpiTotalFunds">Liquidity: $0.00</div>
+            </div>
+
+            <div class="kpi-card glass-panel" id="kpiPaymentsCard">
+                <div class="kpi-header">
+                    <span class="kpi-title">Completed Transfers</span>
+                    <div class="kpi-icon purple">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-value" id="kpiPaymentCount">0</div>
+                <div class="kpi-meta">Double-entry verified (2 legs / transfer)</div>
+            </div>
+
+            <div class="kpi-card glass-panel" id="kpiReconciliationCard">
+                <div class="kpi-header">
+                    <span class="kpi-title">Ledger Integrity</span>
+                    <div class="kpi-icon emerald">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-value" id="kpiDiscrepancies">0 Errors</div>
+                <div class="kpi-meta" id="kpiInvariantStatus">All debits net to credits</div>
+            </div>
+
+            <div class="kpi-card glass-panel" id="kpiOutboxCard">
+                <div class="kpi-header">
+                    <span class="kpi-title">Transactional Outbox</span>
+                    <div class="kpi-icon amber">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-value" id="kpiOutboxStatus">Syncing</div>
+                <div class="kpi-meta">Publishing via Kafka partition key</div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="accountsTab" id="tabAccountsBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                Accounts & Balances
+            </button>
+            <button class="tab-btn" data-tab="transfersTab" id="tabTransfersBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="17 1 21 5 17 9"></polyline>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                    <polyline points="7 23 3 19 7 15"></polyline>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                </svg>
+                Execute Payment & Idempotency
+            </button>
+            <button class="tab-btn" data-tab="ledgerTab" id="tabLedgerBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Double-Entry Audit Stream
+            </button>
+            <button class="tab-btn" data-tab="reconciliationTab" id="tabReconcileBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                Reconciliation & Auditing
+            </button>
+        </nav>
+
+        <!-- Tab 1: Accounts -->
+        <section class="tab-panel active" id="accountsTab">
+            <div class="panel-header">
+                <div>
+                    <h2>Customer Accounts</h2>
+                    <p class="subtitle">Real-time ledger accounts with denormalized balance caching and row-level lock concurrency.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" id="refreshAccountsBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                    <button class="btn btn-primary" id="openAccountModalBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Open New Account
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container glass-panel">
+                <table class="data-table" id="accountsTable">
+                    <thead>
+                        <tr>
+                            <th>Account Number</th>
+                            <th>Owner Name</th>
+                            <th>Currency</th>
+                            <th class="text-right">Balance</th>
+                            <th>Status</th>
+                            <th>Account ID</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsTableBody">
+                        <tr>
+                            <td colspan="7" class="loading-cell">Loading accounts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tab 2: Transfers & Idempotency -->
+        <section class="tab-panel" id="transfersTab">
+            <div class="grid-2col">
+                <!-- Payment Form -->
+                <div class="glass-panel form-card">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Initiate Payment Transfer</h2>
+                            <p class="subtitle">Guaranteed atomic double-entry money movement with row-level deadlock prevention.</p>
+                        </div>
+                    </div>
+
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label for="paymentSourceAccount">Source Account (Debit)</label>
+                            <select id="paymentSourceAccount" class="form-control" required>
+                                <option value="">Select source account...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="paymentDestAccount">Destination Account (Credit)</label>
+                            <select id="paymentDestAccount" class="form-control" required>
+                                <option value="">Select destination account...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-half">
+                                <label for="paymentAmount">Amount</label>
+                                <input type="number" id="paymentAmount" class="form-control" placeholder="100.00" min="0.01" step="0.01" required>
+                            </div>
+                            <div class="form-group col-half">
+                                <label for="paymentCurrency">Currency</label>
+                                <input type="text" id="paymentCurrency" class="form-control" value="USD" readonly>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="label-with-action">
+                                <label for="paymentIdempotencyKey">Idempotency Key (UUID)</label>
+                                <button type="button" class="btn-link" id="generateKeyBtn">Generate Fresh Key</button>
+                            </div>
+                            <div class="input-with-icon">
+                                <input type="text" id="paymentIdempotencyKey" class="form-control mono" required>
+                            </div>
+                            <span class="field-hint">Retrying with the same key safely returns the cached response without double-spending.</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large" id="submitPaymentBtn">
+                                Execute Double-Entry Transfer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Live Idempotency & Concurrency Stress Test Box -->
+                <div class="glass-panel lab-card">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Idempotency & Concurrency Lab</h2>
+                            <p class="subtitle">Demonstrate zero double-spending under retries and deadlock-safe execution.</p>
+                        </div>
+                    </div>
+
+                    <div class="lab-actions">
+                        <div class="lab-test-box">
+                            <h3>1. Idempotency Replay Test</h3>
+                            <p>Sends the same payment request payload multiple times with the same idempotency key. Redis SETNX + Postgres guarantee exactly one execution.</p>
+                            <button class="btn btn-secondary" id="testDuplicateKeyBtn">
+                                Replay Duplicate Payment
+                            </button>
+                        </div>
+
+                        <div class="lab-test-box">
+                            <h3>2. Bidirectional Concurrency Test</h3>
+                            <p>Fires simultaneous opposite transfers (A &rarr; B and B &rarr; A) to prove account locking order avoids deadlocks.</p>
+                            <button class="btn btn-secondary" id="testConcurrentTransfersBtn">
+                                Run Concurrency Simulation (10 Threads)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="console-box">
+                        <div class="console-header">
+                            <span>EXECUTION LOG</span>
+                            <button class="btn-link" id="clearConsoleBtn">Clear</button>
+                        </div>
+                        <pre id="executionConsole">Ready. Initiate a payment or run a test...</pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Double-Entry Audit Stream -->
+        <section class="tab-panel" id="ledgerTab">
+            <div class="panel-header">
+                <div>
+                    <h2>Immutable Double-Entry Audit Stream</h2>
+                    <p class="subtitle">Append-only ledger entries. For every payment, exactly one DEBIT and one CREDIT net to zero.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" id="refreshLedgerBtn">
+                        Refresh Entries
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container glass-panel">
+                <table class="data-table" id="ledgerTable">
+                    <thead>
+                        <tr>
+                            <th>Entry ID</th>
+                            <th>Payment ID</th>
+                            <th>Account ID</th>
+                            <th>Type</th>
+                            <th class="text-right">Amount</th>
+                            <th class="text-right">Balance Snapshot</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody">
+                        <tr>
+                            <td colspan="7" class="loading-cell">Loading ledger stream...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tab 4: Reconciliation & Auditing -->
+        <section class="tab-panel" id="reconciliationTab">
+            <div class="panel-header">
+                <div>
+                    <h2>Periodic Reconciliation & Drift Detection</h2>
+                    <p class="subtitle">Runs invariant assertions across all accounts and completed payments. Financial ledgers must never silently mutate.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-primary" id="triggerReconciliationBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Run Reconciliation Audit Now
+                    </button>
+                </div>
+            </div>
+
+            <div class="audit-status-banner glass-panel" id="auditStatusBanner">
+                <div class="status-indicator-icon success" id="auditBannerIcon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="status-indicator-text">
+                    <h3 id="auditBannerTitle">Ledger Invariants Healthy</h3>
+                    <p id="auditBannerDesc">Account balance caches match 100% of immutable ledger entries. All payments net to zero.</p>
+                </div>
+            </div>
+
+            <div class="table-container glass-panel">
+                <div class="table-subheading">Reconciliation Audit Log & Invariant Discrepancies</div>
+                <table class="data-table" id="discrepancyTable">
+                    <thead>
+                        <tr>
+                            <th>Discrepancy Type</th>
+                            <th>Reference ID</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="discrepancyTableBody">
+                        <tr>
+                            <td colspan="3" class="empty-cell">No discrepancies detected. The double-entry ledger is perfectly balanced.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Open Account -->
+    <div class="modal-overlay" id="openAccountModal">
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h3>Open Customer Account</h3>
+                <button class="modal-close" id="closeAccountModalBtn">&times;</button>
+            </div>
+            <form id="openAccountForm">
+                <div class="form-group">
+                    <label for="newAccountNumber">Account Number</label>
+                    <input type="text" id="newAccountNumber" class="form-control mono" placeholder="ACC-1001" required>
+                </div>
+                <div class="form-group">
+                    <label for="newOwnerName">Owner Name</label>
+                    <input type="text" id="newOwnerName" class="form-control" placeholder="e.g. Alice Chen" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-half">
+                        <label for="newCurrency">Currency</label>
+                        <select id="newCurrency" class="form-control">
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (&euro;)</option>
+                            <option value="GBP">GBP (&pound;)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-half">
+                        <label for="newOpeningBalance">Opening Balance</label>
+                        <input type="number" id="newOpeningBalance" class="form-control" placeholder="1000.00" min="0" step="0.01">
+                    </div>
+                </div>
+                <span class="field-hint">Initial balances are funded from the Central Clearing Reserve via balanced double-entry entries.</span>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelAccountModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveAccountBtn">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Deposit/Withdraw -->
+    <div class="modal-overlay" id="fundModal">
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h3 id="fundModalTitle">Deposit Funds</h3>
+                <button class="modal-close" id="closeFundModalBtn">&times;</button>
+            </div>
+            <form id="fundForm">
+                <input type="hidden" id="fundAccountId">
+                <input type="hidden" id="fundType" value="DEPOSIT">
+                <div class="form-group">
+                    <label>Target Account</label>
+                    <div id="fundAccountInfo" class="account-summary-pill">Loading...</div>
+                </div>
+                <div class="form-group">
+                    <label for="fundAmount">Amount</label>
+                    <input type="number" id="fundAmount" class="form-control" placeholder="500.00" min="0.01" step="0.01" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelFundModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitFundBtn">Confirm Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
