@@ -35,9 +35,7 @@ public class IdempotencyRecord implements Serializable {
 
     @Column(name = "request_hash", nullable = false, length = 128)
     private String requestHash;
-
-    @Lob
-    @Column(name = "response_body")
+    @Column(name = "response_body", columnDefinition = "TEXT")
     private String responseBody;
 
     @Enumerated(EnumType.STRING)

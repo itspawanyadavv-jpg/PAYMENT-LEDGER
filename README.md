@@ -33,14 +33,14 @@ OutboxPublisher polls PENDING rows (FOR UPDATE SKIP LOCKED) and publishes to Kaf
 ## Live Interactive Dashboard & Documentation
 
 When running locally, open your browser to access:
-- **Interactive Web Dashboard**: [http://localhost:8080](http://localhost:8080)
+- **Interactive Web Dashboard**: [http://localhost:8081](http://localhost:8081)
   - Account Manager & Liquidity Top-up / Withdrawal
   - Idempotency Replay Lab & 10-Thread Concurrency Stress Tester
   - Live Double-Entry Audit Stream
   - On-Demand Invariant Reconciliation Auditor
-- **OpenAPI 3 / Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **Spring Boot Actuator Health**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
-- **Prometheus Metrics Endpoint**: [http://localhost:8080/actuator/prometheus](http://localhost:8080/actuator/prometheus)
+- **OpenAPI 3 / Swagger UI**: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
+- **Spring Boot Actuator Health**: [http://localhost:8081/actuator/health](http://localhost:8081/actuator/health)
+- **Prometheus Metrics Endpoint**: [http://localhost:8081/actuator/prometheus](http://localhost:8081/actuator/prometheus)
 - **Kafka-UI Console**: [http://localhost:8085](http://localhost:8085)
 
 ---

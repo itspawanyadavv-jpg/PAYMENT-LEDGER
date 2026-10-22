@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * infra-level wiring is discoverable in one place.
  */
 @Configuration
-@EnableJpaRepositories(basePackages = "com.aman.payment.repository")
+@EnableJpaRepositories(basePackages = "com.aman.payment")
 @EnableJpaAuditing
 @EnableTransactionManagement
 public class DatabaseConfig {

@@ -17,7 +17,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, java.u
      * event twice. SKIP LOCKED lets other instances move past rows
      * already claimed instead of blocking on them.
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = """
             select * from outbox_events
             where status = 'PENDING'

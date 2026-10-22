@@ -3,9 +3,9 @@ spring:
     name: payment-ledger
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/payment_ledger
-    username: payment_user
-    password: payment_pass
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/payment_ledger}
+    username: ${SPRING_DATASOURCE_USERNAME:payment_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:payment_pass}
     hikari:
       maximum-pool-size: 20
       connection-timeout: 3000
@@ -27,12 +27,12 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6380}
       timeout: 2000ms
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -52,16 +52,16 @@ spring:
 
 payment:
   outbox:
-    poll-interval-ms: 500
-    batch-size: 100
+    poll-interval-ms: ${PAYMENT_OUTBOX_POLL_INTERVAL_MS:500}
+    batch-size: ${PAYMENT_OUTBOX_BATCH_SIZE:100}
   idempotency:
-    ttl-hours: 24
+    ttl-hours: ${PAYMENT_IDEMPOTENCY_TTL_HOURS:24}
   kafka:
     topic:
-      payment-events: payment.events
+      payment-events: ${KAFKA_TOPIC_PAYMENT_EVENTS:payment.events}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8081}
 
 management:
   endpoints:
