@@ -40,6 +40,7 @@ When running locally, open your browser to access:
   - On-Demand Invariant Reconciliation Auditor
 - **OpenAPI 3 / Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **Spring Boot Actuator Health**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **Prometheus Metrics Endpoint**: [http://localhost:8080/actuator/prometheus](http://localhost:8080/actuator/prometheus)
 - **Kafka-UI Console**: [http://localhost:8085](http://localhost:8085)
 
 ---
