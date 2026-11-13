@@ -1,7 +1,6 @@
 package com.aman.payment.test;
 
 import com.aman.payment.PaymentApplication;
-import org.junit.jupiter.api.BeforeAll;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.ActiveProfiles;
@@ -9,8 +8,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -20,28 +17,28 @@ import org.testcontainers.utility.DockerImageName;
  * delivery instead of mocks - the concurrency and durability guarantees
  * this service makes are only meaningful when tested against the real
  * infrastructure they depend on.
+ *
+ * Uses the Singleton Container pattern (without @Testcontainers/@Container)
+ * so that containers are started once and shared across all integration tests
+ * without being prematurely shut down between test classes.
  */
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = PaymentApplication.class)
 @ActiveProfiles("test")
-@EmbeddedKafka(partitions = 1, topics = {"payment.events"}, brokerProperties = {
-        "listeners=PLAINTEXT://localhost:9092", "port=9092"
-})
+@EmbeddedKafka(partitions = 1, topics = {"payment.events"})
 public abstract class AbstractIntegrationTest {
 
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(DockerImageName.parse("postgres:15-alpine"))
-            .withDatabaseName("payment_ledger")
-            .withUsername("payment_user")
-            .withPassword("payment_pass");
+    static final PostgreSQLContainer<?> POSTGRES;
+    static final GenericContainer<?> REDIS;
 
-    @Container
-    static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
-            .withExposedPorts(6379);
-
-    @BeforeAll
-    static void startContainers() {
+    static {
+        POSTGRES = new PostgreSQLContainer<>(DockerImageName.parse("postgres:15-alpine"))
+                .withDatabaseName("payment_ledger")
+                .withUsername("payment_user")
+                .withPassword("payment_pass");
         POSTGRES.start();
+
+        REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
+                .withExposedPorts(6379);
         REDIS.start();
     }
 
