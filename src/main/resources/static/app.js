@@ -1,4 +1,23 @@
 // Double-Entry Payment Ledger Dashboard Client
+// Attach default internal API Key for dashboard administrative and reconciliation access
+const originalFetch = window.fetch;
+window.fetch = async function(url, options = {}) {
+    options = options || {};
+    if (url.startsWith('/api/')) {
+        options.headers = options.headers || {};
+        if (options.headers instanceof Headers) {
+            if (!options.headers.has('X-API-KEY')) {
+                options.headers.set('X-API-KEY', 'finance-admin');
+            }
+        } else {
+            if (!options.headers['X-API-KEY']) {
+                options.headers['X-API-KEY'] = 'finance-admin';
+            }
+        }
+    }
+    return originalFetch(url, options);
+};
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // State

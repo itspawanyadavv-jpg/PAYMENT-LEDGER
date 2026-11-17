@@ -1,0 +1,77 @@
+name: Concurrency & k6 Load Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  concurrency-and-k6:
+    name: Concurrency Verification & Load Testing
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: payment_ledger
+          POSTGRES_USER: payment_user
+          POSTGRES_PASSWORD: payment_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run Maven Concurrency & Invariant Integration Tests
+        run: |
+          mvn clean test -Dtest=ConcurrentPaymentTest,DoubleEntryLedgerTest,IdempotencyTest,LedgerInvariantTest -B
+
+      - name: Build & Run Payment Ledger Service (Daemon)
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/payment_ledger
+          SPRING_DATASOURCE_USERNAME: payment_user
+          SPRING_DATASOURCE_PASSWORD: payment_pass
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
+        run: |
+          mvn package -DskipTests -B
+          java -jar target/payment-ledger-*.jar > /tmp/ledger.log 2>&1 &
+          echo "Waiting for Payment Ledger API on port 8080..."
+          timeout 60 bash -c 'until curl -s http://localhost:8080/actuator/health > /dev/null; do sleep 1; done'
+          echo "Ledger service is up and healthy!"
+
+      - name: Run k6 Money Transfer Load Test
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: load-tests/k6-payment-transfer.js
+          flags: --env PAYMENT_LEDGER_API_URL=http://localhost:8080
+
+      - name: Dump Logs on Failure
+        if: failure()
+        run: cat /tmp/ledger.log
