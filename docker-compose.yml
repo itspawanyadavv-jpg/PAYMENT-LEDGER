@@ -4,6 +4,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: payment-ledger-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: payment_ledger
       POSTGRES_USER: payment_user
@@ -21,6 +22,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: payment-ledger-redis
+    restart: unless-stopped
     ports:
       - "6380:6379"
     volumes:
@@ -34,6 +36,7 @@ services:
   kafka:
     image: apache/kafka:3.7.0
     container_name: payment-ledger-kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
     environment:
@@ -56,6 +59,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: payment-ledger-kafka-ui
+    restart: unless-stopped
     ports:
       - "8086:8080"
     environment:
@@ -70,6 +74,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: payment-ledger-app
+    restart: unless-stopped
     ports:
       - "8081:8081"
     environment:
