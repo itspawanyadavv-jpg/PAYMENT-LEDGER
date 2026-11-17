@@ -57,7 +57,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: payment-ledger-kafka-ui
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
