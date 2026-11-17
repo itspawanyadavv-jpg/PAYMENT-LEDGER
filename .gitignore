@@ -40,7 +40,7 @@ buildNumber.properties
 *.iml
 *.iws
 *.ipr
-out/
+/out/
 .vscode/
 .classpath
 .project
